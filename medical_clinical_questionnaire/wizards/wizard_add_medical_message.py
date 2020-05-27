@@ -21,26 +21,6 @@ class WizardAddMedicalMessage(models.TransientModel):
         inverse_name="wizard_id",
     )
 
-    @api.onchange("questionnaire_item_ids", "questionnaire_item_ids.done")
-    def on_change_questionnaire_item_ids(self):
-        self.questionnaire_item_response_ids = [(6, 0, [])]
-        values = []
-        for pr in self.questionnaire_item_ids.filtered("done").mapped(
-            "procedure_request_id"
-        ):
-            values += [
-                (
-                    0,
-                    0,
-                    self.careplan_medical_id._action_add_message_element_questionnaire_item_vals(
-                        pr, question
-                    ),
-                )
-                for question in pr.questionnaire_id.item_ids
-            ]
-        print(values)
-        self.questionnaire_item_response_ids = values
-
     def _get_careplan_message_kwargs(self):
         result = super()._get_careplan_message_kwargs()
         result["procedure_request_ids"] = (
@@ -49,7 +29,13 @@ class WizardAddMedicalMessage(models.TransientModel):
             .ids
         )
         # TODO: probablemente no es el sitio a procesar esto
+        import logging
+
+        logging.info("PROCESS")
         questionnaire_response_ids = self.process_questionnaire_items()
+        import logging
+
+        logging.info(questionnaire_response_ids)
         result["questionnaire_response_ids"] = questionnaire_response_ids.ids
         return result
 
@@ -61,18 +47,31 @@ class WizardAddMedicalMessage(models.TransientModel):
             vals = []
             for item in self.questionnaire_item_response_ids:
                 if item.procedure_request_id == pr.id:
-                    # item_vals = item.copy_vals()
-                    vals.append(
-                        (0, 0, {"name": item.name, "result": item.result})
-                    )
+                    item_vals = item.copy_vals()
+                    import logging
+
+                    logging.info(item_vals)
+                    vals.append((0, 0, item_vals))
             responses |= self.env["medical.questionnaire.response"].create(
                 {
                     "medical_careplan_id": self.careplan_medical_id.id,
                     "procedure_request_id": pr.id,
                     "item_ids": vals,
+                    "questionnaire_id": pr.questionnaire_id.id,
+                    "patient_id": self.careplan_medical_id.patient_id.id,
                 }
             )
         return responses
+
+    def add_message(self):
+        import logging
+
+        logging.info(self.questionnaire_item_response_ids)
+        res = super().add_message()
+        import logging
+
+        logging.info("ADDED")
+        return res
 
 
 class WizardAddMedicalMessageProcedure(models.TransientModel):
@@ -113,6 +112,20 @@ class WizardAddMedicalMessageQuestionnaire(models.TransientModel):
     )
     name = fields.Char(compute="_compute_name")
     done = fields.Boolean()
+
+    @api.onchange("done")
+    def _onchange_done(self):
+        if self.done:
+            self.wizard_id.questionnaire_item_response_ids = [
+                (
+                    0,
+                    0,
+                    self.wizard_id.careplan_medical_id._action_add_message_element_questionnaire_item_vals(
+                        self.procedure_request_id, question
+                    ),
+                )
+                for question in self.procedure_request_id.questionnaire_id.item_ids
+            ]
 
     @api.depends("procedure_request_id")
     def _compute_name(self):
