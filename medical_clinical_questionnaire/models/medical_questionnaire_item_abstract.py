@@ -41,6 +41,9 @@ class MedicalQuestionnaireItemAbstract(models.AbstractModel):
 
     procedure_request_id = fields.Many2one("medical.procedure.request")
 
+    is_medical_observation = fields.Boolean()
+    medical_observation_code = fields.Many2one("medical.observation.code")
+
     def read(self, fields=None, load="_classic_read"):
         result = super().read(fields=fields, load=load)
         if not self.env.context.get("widget_medical_questionnaire"):

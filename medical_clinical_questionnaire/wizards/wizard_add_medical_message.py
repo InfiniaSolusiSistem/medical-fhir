@@ -21,6 +21,20 @@ class WizardAddMedicalMessage(models.TransientModel):
         inverse_name="wizard_id",
     )
 
+    @api.onchange("questionnaire_item_ids")
+    def onchange_questionnaire_item_ids(self):
+        import logging
+
+        logging.info("hola")
+        questionnaire_item_ids = [
+            q.procedure_request_id.id
+            for q in self.questionnaire_item_ids
+            if q.done
+        ]
+        domain = [("procedure_request_id", "in", questionnaire_item_ids)]
+        logging.info(domain)
+        return {"domain": {"questionnaire_item_response_ids": domain}}
+
     def _get_careplan_message_kwargs(self):
         result = super()._get_careplan_message_kwargs()
         result["procedure_request_ids"] = (
@@ -35,16 +49,11 @@ class WizardAddMedicalMessage(models.TransientModel):
 
     def process_questionnaire_items(self):
         responses = self.env["medical.questionnaire.response"]
-        for pr in self.questionnaire_item_ids.filtered("done").mapped(
-            "procedure_request_id"
-        ):
+        for pr in self.questionnaire_item_ids.mapped("procedure_request_id"):
             vals = []
             for item in self.questionnaire_item_response_ids:
-                if item.procedure_request_id == pr.id:
-                    item_vals = item.copy_vals()
-                    import logging
-
-                    logging.info(item_vals)
+                if item.procedure_request_id.id == pr.id:
+                    item_vals = item.copy_data()[0]
                     vals.append((0, 0, item_vals))
             responses |= self.env["medical.questionnaire.response"].create(
                 {
@@ -60,6 +69,7 @@ class WizardAddMedicalMessage(models.TransientModel):
     def add_message(self):
         import logging
 
+        logging.info("iepa")
         logging.info(self.questionnaire_item_response_ids)
         res = super().add_message()
         import logging
@@ -106,23 +116,6 @@ class WizardAddMedicalMessageQuestionnaire(models.TransientModel):
     )
     name = fields.Char(compute="_compute_name")
     done = fields.Boolean()
-
-    @api.onchange("done")
-    def _onchange_done(self):
-        if self.done:
-            self.wizard_id.questionnaire_item_response_ids = [
-                (
-                    0,
-                    0,
-                    self.wizard_id.careplan_medical_id._action_add_message_element_questionnaire_item_vals(
-                        self.procedure_request_id, question
-                    ),
-                )
-                for question in self.procedure_request_id.questionnaire_id.item_ids
-            ]
-            import logging
-
-            logging.info(self.wizard_id.questionnaire_item_response_ids)
 
     @api.depends("procedure_request_id")
     def _compute_name(self):

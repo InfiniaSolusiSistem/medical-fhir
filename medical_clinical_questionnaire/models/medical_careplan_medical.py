@@ -23,6 +23,7 @@ class MedicalCareplanMedical(models.Model):
         result = super()._action_add_message_element_vals()
         procedure_items = []
         questionnaire_items = []
+        response_items = []
         for pr in self.procedure_request_ids:
             # TODO: Check if we need to add this
             pr_type = pr.procedure_request_result
@@ -40,8 +41,19 @@ class MedicalCareplanMedical(models.Model):
                         ),
                     )
                 )
+                response_items += [
+                    (
+                        0,
+                        0,
+                        self._action_add_message_element_questionnaire_item_vals(
+                            pr, question
+                        ),
+                    )
+                    for question in pr.questionnaire_id.item_ids
+                ]
         result["procedure_item_ids"] = procedure_items
         result["questionnaire_item_ids"] = questionnaire_items
+        result["questionnaire_item_response_ids"] = response_items
         return result
 
     def _post_medical_message(self, message_text, **kwargs):
@@ -66,7 +78,7 @@ class MedicalCareplanMedical(models.Model):
                         {
                             "observation_code_id": item.medical_observation_code.id,
                             # "value": item.result,
-                            # "encounter": ...
+                            # "encounter": item.result,
                         }
                     )
         return message
