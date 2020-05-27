@@ -26,4 +26,21 @@
             </ul>
         </div>
     </template>
+
+    <template id="medical_questionnaire_messages_template">
+        <div>
+            <div><strong>Questionnaires:</strong></div>
+            <ul>
+                <li t-foreach="o.questionnaire_response_ids" t-as="response">
+                    <span t-esc="response.display_name"/>
+                    <ul>
+                        <li t-foreach="response.item_ids" t-as="item">
+                            <div t-if="item.result"><strong><span t-esc="item.name"/>: </strong><span t-esc="item.result"/></div>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </template>
+
 </odoo>
