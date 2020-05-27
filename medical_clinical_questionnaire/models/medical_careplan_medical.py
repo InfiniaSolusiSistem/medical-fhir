@@ -53,7 +53,7 @@ class MedicalCareplanMedical(models.Model):
                 ]
         result["procedure_item_ids"] = procedure_items
         result["questionnaire_item_ids"] = questionnaire_items
-        result["questionnaire_item_response_ids"] = response_items
+        # result["questionnaire_item_response_ids"] = response_items
         return result
 
     def _post_medical_message(self, message_text, **kwargs):
@@ -76,7 +76,7 @@ class MedicalCareplanMedical(models.Model):
                 if item.is_medical_observation:
                     self.env["medical.observation"].create(
                         {
-                            "observation_code_id": item.medical_observation_code.id,
+                            "observation_code_id": item.medical_observation_code_id.id,
                             # "value": item.result,
                             # "encounter": item.result,
                         }
