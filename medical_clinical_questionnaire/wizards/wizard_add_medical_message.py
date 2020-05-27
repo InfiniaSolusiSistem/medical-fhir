@@ -29,13 +29,7 @@ class WizardAddMedicalMessage(models.TransientModel):
             .ids
         )
         # TODO: probablemente no es el sitio a procesar esto
-        import logging
-
-        logging.info("PROCESS")
         questionnaire_response_ids = self.process_questionnaire_items()
-        import logging
-
-        logging.info(questionnaire_response_ids)
         result["questionnaire_response_ids"] = questionnaire_response_ids.ids
         return result
 
@@ -126,6 +120,9 @@ class WizardAddMedicalMessageQuestionnaire(models.TransientModel):
                 )
                 for question in self.procedure_request_id.questionnaire_id.item_ids
             ]
+            import logging
+
+            logging.info(self.wizard_id.questionnaire_item_response_ids)
 
     @api.depends("procedure_request_id")
     def _compute_name(self):
