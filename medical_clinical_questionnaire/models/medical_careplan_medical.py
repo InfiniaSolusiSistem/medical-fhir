@@ -77,8 +77,10 @@ class MedicalCareplanMedical(models.Model):
                     self.env["medical.observation"].create(
                         {
                             "observation_code_id": item.medical_observation_code_id.id,
-                            # "value": item.result,
-                            # "encounter": item.result,
+                            "observation_uom_id": item.medical_observation_code_id.default_observation_uom.id,
+                            "observation_value": item.result,
+                            "observation_date": item.questionnaire_response_id.create_date,
+                            "encounter_id": item.questionnaire_response_id.medical_careplan_id.encounter_id.id,
                         }
                     )
         return message
