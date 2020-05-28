@@ -81,6 +81,7 @@ class MedicalCareplanMedical(models.Model):
                             "observation_value": item.result,
                             "observation_date": item.questionnaire_response_id.create_date,
                             "encounter_id": item.questionnaire_response_id.medical_careplan_id.encounter_id.id,
+                            "medical_careplan_medical_id": item.questionnaire_response_id.medical_careplan_id.id,
                         }
                     )
         return message

@@ -13,6 +13,7 @@
         "medical_administration_encounter_careplan",
         "medical_clinical_observation",
         "medical_administration_location",
+        "web_widget_bokeh_chart",
     ],
     "data": [
         "wizards/wizard_add_medical_message.xml",
