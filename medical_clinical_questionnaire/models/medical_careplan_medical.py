@@ -74,14 +74,22 @@ class MedicalCareplanMedical(models.Model):
             )
             for item in questionnaire_ids.mapped("item_ids"):
                 if item.is_medical_observation:
+                    response = item.questionnaire_response_id
+                    code = item.medical_observation_code_id
                     self.env["medical.observation"].create(
                         {
-                            "observation_code_id": item.medical_observation_code_id.id,
-                            "observation_uom_id": item.medical_observation_code_id.default_observation_uom.id,
+                            "observation_code_id": code.id,
+                            "observation_uom_id": (
+                                code.default_observation_uom.id
+                            ),
                             "observation_value": item.result,
-                            "observation_date": item.questionnaire_response_id.create_date,
-                            "encounter_id": item.questionnaire_response_id.medical_careplan_id.encounter_id.id,
-                            "medical_careplan_medical_id": item.questionnaire_response_id.medical_careplan_id.id,
+                            "observation_date": response.create_date,
+                            "encounter_id": (
+                                response.medical_careplan_id.encounter_id.id
+                            ),
+                            "medical_careplan_medical_id": (
+                                response.medical_careplan_id.id
+                            ),
                         }
                     )
         return message

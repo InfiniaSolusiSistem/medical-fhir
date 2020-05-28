@@ -24,6 +24,7 @@ class WizardAddMedicalMessage(models.TransientModel):
     @api.onchange("questionnaire_item_ids")
     def onchange_done(self):
         items = []
+        cp = self.careplan_medical_id
         for rec in self.questionnaire_item_ids:
             if not rec.done:
                 continue
@@ -31,7 +32,7 @@ class WizardAddMedicalMessage(models.TransientModel):
                 (
                     0,
                     0,
-                    self.careplan_medical_id._action_add_message_element_questionnaire_item_vals(
+                    cp._action_add_message_element_questionnaire_item_vals(
                         rec.procedure_request_id, question
                     ),
                 )
@@ -104,7 +105,7 @@ class WizardAddMedicalMessageQuestionnaireItem(models.TransientModel):
     _inherit = "medical.questionnaire.item.abstract"
     _description = "Questionnaire in medical message"
 
-    wizard_id = fields.Many2one("wizard.add.medical.message",)
+    wizard_id = fields.Many2one("wizard.add.medical.message")
     wizard_questionnaire_id = fields.Many2one(
         "wizard.add.medical.message.questionnaire"
     )
