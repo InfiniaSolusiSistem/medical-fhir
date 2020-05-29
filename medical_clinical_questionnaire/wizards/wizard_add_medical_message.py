@@ -1,7 +1,8 @@
 # Copyright 2020 Creu Blanca
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-from odoo import api, fields, models
+from odoo import api, fields, models, _
+from odoo.exceptions import ValidationError
 
 
 class WizardAddMedicalMessage(models.TransientModel):
@@ -26,7 +27,7 @@ class WizardAddMedicalMessage(models.TransientModel):
         items = []
         cp = self.careplan_medical_id
         for rec in self.questionnaire_item_ids:
-            if not rec.done:
+            if not rec.state != "done":
                 continue
             items += [
                 (
@@ -76,6 +77,8 @@ class WizardAddMedicalMessage(models.TransientModel):
         return responses
 
     def add_message(self):
+        if self.questionnaire_item_ids.filtered(lambda r: not r.state):
+            raise ValidationError(_("All items must have a state set"))
         res = super().add_message()
         return res
 
@@ -89,7 +92,10 @@ class WizardAddMedicalMessageProcedure(models.TransientModel):
         "medical.procedure.request", required=True, readonly=True
     )
     name = fields.Char(compute="_compute_name")
-    done = fields.Boolean()
+    state = fields.Selection(
+        [("done", "Done"), ("postponed", "Posponed"), ("aborted", "Aborted")],
+        default=False,
+    )
 
     @api.depends("procedure_request_id")
     def _compute_name(self):
