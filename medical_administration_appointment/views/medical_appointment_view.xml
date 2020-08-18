@@ -1,0 +1,57 @@
+<odoo>
+  <data>
+    <!-- medical.appointment action window -->
+    <record id="medical_appointment_action" model="ir.actions.act_window">
+      <field name="name">Appointments</field>
+      <field name="type">ir.actions.act_window</field>
+      <field name="res_model">medical.appointment</field>
+      <field name="view_mode">tree,form</field>
+      <field name="view_type">form</field>
+      <field name="help" type="html">
+        <p class="oe_view_nocontent_create">
+          <!-- Add Text Here -->
+        </p><p>
+          <!-- More details about what a user can do with this object will be OK --> 
+        </p>
+      </field>
+    </record>
+
+    <menuitem id="medical_appointment_menu_act" 
+      name="Appointments" 
+      parent="medical_base.medical_root_administration" 
+      action="medical_appointment_action" 
+      groups="group_medical_appointment_viewer"
+      sequence="100"
+    />
+
+    <!-- medical.appointment tree view -->
+    <record id="medical_appointment_view_tree" model="ir.ui.view">
+      <field name="name">medical.appointment.view.tree</field>
+      <field name="model">medical.appointment</field>
+      <field name="arch" type="xml">
+        <tree>
+          <field name="name"/>
+          <field name="state"/>
+        </tree>
+      </field>
+    </record>
+
+    <!-- medical.appointment form view -->
+    <record id="medical_appointment_view_form" model="ir.ui.view">
+      <field name="name">medical.appointment.view.form</field>
+      <field name="model">medical.appointment</field>
+      <field name="arch" type="xml">
+        <form string="">
+          <header>
+            <field name="state" widget="statusbar"/>
+          </header>
+          <sheet>
+            <group>
+              <field name="name"/>
+            </group>
+          </sheet>
+        </form>
+      </field>
+    </record>
+  </data>
+</odoo>

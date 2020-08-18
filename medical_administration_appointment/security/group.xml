@@ -1,0 +1,12 @@
+<odoo>
+    <data>
+        <record id="group_medical_appointment_manager" model="res.groups">
+            <field name="name">Appointment Manager</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+        </record>
+        <record id="group_medical_appointment_viewer" model="res.groups">
+            <field name="name">Appointment Viewer</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+        </record>
+    </data>
+</odoo>

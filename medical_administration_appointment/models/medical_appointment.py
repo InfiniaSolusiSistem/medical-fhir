@@ -7,7 +7,7 @@ class MedicalAppointment(models.Model):
     _name = "medical.appointment"
     _description = "Medical Appointment"
     _inherit = ["medical.abstract", "mail.thread", "mail.activity.mixin"]
-    _order = "create_data DESC"
+    _order = "create_date DESC"
 
     name = fields.Char(string='Name')
     internal_identifier = fields.Char(string="Appointment")
@@ -27,6 +27,7 @@ class MedicalAppointment(models.Model):
         ]
     )  # FHIR Field: status
     cancellation_reason_id = fields.Many2one(comodel_name='medical.appointment.cancellation.reason', string='Cancellation Reason')
+    create_date = fields.Datetime(string='Create Date')    
     # FHIR Field: cancellationReason    
 
 class MedicalAppointmentCancellationReason(models.Model):

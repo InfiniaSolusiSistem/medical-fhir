@@ -10,7 +10,9 @@
     "license": "LGPL-3",
     "depends": ["medical_base"],
     "data": [
-        'views/views.xml',
+        'security/group.xml',
+        'security/ir.model.access.csv',
+        'views/medical_appointment_view.xml',
         'views/templates.xml',
     ],
     "demo": [],
