@@ -2,8 +2,9 @@
 # Copyright 2017 Eficent Business and IT Consulting Services, S.L.
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl.html).
 
+from odoo.exceptions import UserError
+from odoo.exceptions import Warning as Warn
 from odoo.tests import TransactionCase
-from odoo.exceptions import Warning
 
 
 class TestProcedureRequest(TransactionCase):
@@ -32,6 +33,8 @@ class TestProcedureRequest(TransactionCase):
         self.assertEqual(len(procedure_requests), len(procedures))
         for request in procedure_requests:
             self.assertEqual(request.procedure_count, 1)
+            with self.assertRaises(Warn):
+                request.unlink()
             action = request.action_view_procedure()
             self.assertEqual(
                 action["context"]["default_procedure_request_id"], request.id
