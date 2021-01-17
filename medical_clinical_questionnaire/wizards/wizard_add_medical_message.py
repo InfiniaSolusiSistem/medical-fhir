@@ -6,7 +6,6 @@ from odoo.exceptions import ValidationError
 
 
 class WizardAddMedicalMessage(models.TransientModel):
-
     _inherit = "wizard.add.medical.message"
 
     procedure_item_ids = fields.One2many(
@@ -22,29 +21,16 @@ class WizardAddMedicalMessage(models.TransientModel):
         inverse_name="wizard_id",
     )
 
-    @api.onchange("questionnaire_item_ids")
-    def onchange_done(self):
-        items = []
-        cp = self.careplan_medical_id
-        for rec in self.questionnaire_item_ids:
-            if not rec.state != "done":
-                continue
-            items += [
-                (
-                    0,
-                    0,
-                    cp._action_add_message_element_questionnaire_item_vals(
-                        rec.procedure_request_id, question
-                    ),
-                )
-                for question in rec.procedure_request_id.questionnaire_id.item_ids
-            ]
-        self.questionnaire_item_response_ids = items
+    def _compute_allow_back(self):
+        for record in self:
+            record.allow_back = getattr(
+                record, "state_previous_%s" % record.state, False
+            ) and (record.procedure_item_ids or record.questionnaire_item_ids)
 
     def _get_careplan_message_kwargs(self):
         result = super()._get_careplan_message_kwargs()
         result["procedure_request_ids"] = (
-            self.procedure_item_ids.filtered(lambda r: r.done)
+            self.procedure_item_ids.filtered(lambda r: r.state.done)
             .mapped("procedure_request_id")
             .ids
         )
@@ -55,7 +41,9 @@ class WizardAddMedicalMessage(models.TransientModel):
 
     def process_questionnaire_items(self):
         responses = self.env["medical.questionnaire.response"]
-        for pr in self.questionnaire_item_ids.mapped("procedure_request_id"):
+        for pr in self.questionnaire_item_ids.filtered(
+            lambda r: r.state.done
+        ).mapped("procedure_request_id"):
             vals = []
             for item in self.questionnaire_item_response_ids:
                 if item.procedure_request_id.id == pr.id:
@@ -76,10 +64,55 @@ class WizardAddMedicalMessage(models.TransientModel):
             )
         return responses
 
-    def add_message(self):
+    def state_exit_start(self):
         if self.questionnaire_item_ids.filtered(lambda r: not r.state):
             raise ValidationError(_("All items must have a state set"))
+        items = []
+        cp = self.careplan_medical_id
+        for rec in self.questionnaire_item_ids:
+            if not rec.state.done:
+                items += [(2, item.id) for item in rec.item_ids]
+            elif (
+                rec.state.done or rec.state.only_timing
+            ) and not rec.item_ids:
+                items += [
+                    (
+                        0,
+                        0,
+                        cp._action_add_message_element_questionnaire_item_vals(
+                            rec.procedure_request_id, question, rec.id
+                        ),
+                    )
+                    for question in rec.procedure_request_id.questionnaire_id.item_ids
+                ]
+        self.write(
+            {"state": "final", "questionnaire_item_response_ids": items}
+        )
+
+    def state_previous_final(self):
+        self.write({"state": "start"})
+
+    def add_message(self):
         res = super().add_message()
+        for item in self.procedure_item_ids:
+            if item.state == self.env.ref(
+                "medical_clinical_questionnaire.wizard_state_generate_next"
+            ):
+                item.procedure_request_id.generate_new_event()
+            elif item.state.done:
+                if item.procedure_request_id.state == "draft":
+                    item.procedure_request_id.draft2active()
+                item.procedure_request_id.active2completed()
+
+        for item in self.questionnaire_item_ids:
+            if item.state == self.env.ref(
+                "medical_clinical_questionnaire.wizard_state_generate_next"
+            ):
+                item.procedure_request_id.generate_new_event()
+            elif item.state.done:
+                if item.procedure_request_id.state == "draft":
+                    item.procedure_request_id.draft2active()
+                item.procedure_request_id.active2completed()
         return res
 
 
@@ -92,9 +125,19 @@ class WizardAddMedicalMessageProcedure(models.TransientModel):
         "medical.procedure.request", required=True, readonly=True
     )
     name = fields.Char(compute="_compute_name")
-    state = fields.Selection(
-        [("done", "Done"), ("postponed", "Posponed"), ("aborted", "Aborted")],
+    state = fields.Many2one(
+        "medical.careplan.medical.wizard.state",
+        domain="[('id', 'in', possible_states)]",
         default=False,
+    )
+    possible_states = fields.Many2many(
+        "medical.careplan.medical.wizard.state",
+        relation="procedure_wizard_states",
+    )
+
+    expected_date = fields.Datetime(
+        related="procedure_request_id.next_expected_date",
+        string="Expected Date",
     )
 
     @api.depends("procedure_request_id")
@@ -126,10 +169,24 @@ class WizardAddMedicalMessageQuestionnaire(models.TransientModel):
         "medical.procedure.request", required=True, readonly=True
     )
     name = fields.Char(compute="_compute_name")
-    done = fields.Boolean()
+    state = fields.Many2one(
+        "medical.careplan.medical.wizard.state",
+        domain="[('id', 'in', possible_states)]",
+        default=False,
+    )
+    possible_states = fields.Many2many(
+        "medical.careplan.medical.wizard.state",
+        relation="questionnaire_wizard_states",
+    )
+
     item_ids = fields.One2many(
         "wizard.add.medical.message.questionnaire.item",
         inverse_name="wizard_questionnaire_id",
+    )
+
+    expected_date = fields.Datetime(
+        related="procedure_request_id.next_expected_date",
+        string="Expected Date",
     )
 
     @api.depends("procedure_request_id")

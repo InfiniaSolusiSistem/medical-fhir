@@ -5,6 +5,7 @@
 from odoo.exceptions import UserError
 from odoo.exceptions import Warning as Warn
 from odoo.tests import TransactionCase
+from odoo.exceptions import Warning
 
 
 class TestProcedureRequest(TransactionCase):

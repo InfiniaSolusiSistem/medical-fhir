@@ -12,7 +12,9 @@
     "depends": [
         "medical_administration_encounter_careplan",
         "medical_clinical_observation",
+        "medical_timing",
         "medical_administration_location",
+        "multi_step_wizard",
     ],
     "external_dependencies": {"python": ["numpy", "pandas"]},
     "data": [

@@ -1,7 +1,8 @@
 # Copyright 2020 Creu Blanca
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-from odoo import models
+from odoo import fields, models
+from datetime import timedelta
 
 
 class MedicalCareplanMedical(models.Model):
@@ -9,29 +10,59 @@ class MedicalCareplanMedical(models.Model):
     _inherit = "medical.careplan.medical"
 
     def _action_add_message_element_procedure_vals(self, request):
-        return {"procedure_request_id": request.id}
+        domain = []
+        if not request.timing_id:
+            domain = [("only_timing", "=", False)]
+        possible_states = self.env[
+            "medical.careplan.medical.wizard.state"
+        ].search(domain)
+        return {
+            "procedure_request_id": request.id,
+            "possible_states": [(6, 0, possible_states.ids)],
+        }
 
     def _action_add_message_element_questionnaire_vals(self, request):
-        return {"procedure_request_id": request.id}
+        domain = []
+        if not request.timing_id:
+            domain = [("only_timing", "=", False)]
+        possible_states = self.env[
+            "medical.careplan.medical.wizard.state"
+        ].search(domain)
+        return {
+            "procedure_request_id": request.id,
+            "possible_states": [(6, 0, possible_states.ids)],
+        }
 
     def _action_add_message_element_questionnaire_item_vals(
-        self, request, question
+        self, request, question, wizard_id=False
     ):
-        return question._generate_question_vals(request)
+        return question._generate_question_vals(request, wizard_id)
 
     def _action_add_message_element_vals(self):
         result = super()._action_add_message_element_vals()
         procedure_items = []
         questionnaire_items = []
-        response_items = []
+        # TODO: Filter procedure requests based on timing and done
         for pr in self.procedure_request_ids:
             # TODO: Check if we need to add this
             pr_type = pr.procedure_request_result
-            if not pr_type or pr_type in "medical.procedure":
+            time_ok = not pr.next_expected_date or (
+                pr.next_expected_date
+                < fields.Datetime.now() + timedelta(hours=1)
+            )
+            if (
+                time_ok
+                and pr.state in ("draft", "active")
+                and (not pr_type or pr_type in "medical.procedure")
+            ):
                 procedure_items.append(
                     (0, 0, self._action_add_message_element_procedure_vals(pr))
                 )
-            if pr_type == "medical.questionnaire.response":
+            if (
+                time_ok
+                and (pr_type == "medical.questionnaire.response")
+                and pr.state in ("draft", "active")
+            ):
                 questionnaire_items.append(
                     (
                         0,

@@ -6,6 +6,7 @@ from odoo import fields, models
 
 class WizardAddMedicalMessage(models.TransientModel):
     _name = "wizard.add.medical.message"
+    _inherit = ["multi.step.wizard.mixin"]
     _description = "wizard.add.medical.message"
 
     message_text = fields.Html()
